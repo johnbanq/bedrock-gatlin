@@ -1,11 +1,9 @@
 package com.github.johnbanq.begatlin.protocol;
 
 import com.google.common.primitives.UnsignedLong;
-import com.nukkitx.network.raknet.RakNetPong;
 import lombok.Data;
 import lombok.SneakyThrows;
 
-import java.nio.charset.StandardCharsets;
 import java.util.StringJoiner;
 
 /**
@@ -73,14 +71,14 @@ public class BedrockPong {
         return bedrockPong;
     }
 
-    public byte[] toRakNet() {
+    public String toRakNet() {
         StringJoiner joiner = new StringJoiner(";").add(this.edition).add(toString(this.motd)).add(Integer.toString(this.protocolVersion)).add(toString(this.version)).add(Integer.toString(this.playerCount)).add(Integer.toString(this.maximumPlayerCount)).add((this.serverId).toString()).add(toString(this.subMotd)).add(toString(this.gameType)).add(this.nintendoLimited ? "0" : "1").add(Integer.toString(this.ipv4Port)).add(Integer.toString(this.ipv6Port));
         if (this.extras != null) {
             for (String extra : this.extras) {
                 joiner.add(extra);
             }
         }
-        return joiner.toString().getBytes(StandardCharsets.UTF_8);
+        return joiner.toString();
     }
 
     private static String toString(String string) {
