@@ -22,7 +22,7 @@ import static com.github.johnbanq.begatlin.network.SimpleDatagramPacket.fromComp
 import static com.github.johnbanq.begatlin.protocol.ProtocolUtil.OFFLINE_MESSAGE_ID_MAGIC;
 
 /**
- * a client for performing server discovery on network
+ * a client for performing minecraft bedrock server discovery on local network
  */
 @Slf4j
 public class DiscoveryClient {

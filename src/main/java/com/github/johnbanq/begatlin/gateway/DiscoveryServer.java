@@ -26,6 +26,9 @@ import java.util.function.Function;
 import static com.github.johnbanq.begatlin.network.SimpleDatagramPacket.fromComponents;
 import static com.github.johnbanq.begatlin.protocol.ProtocolUtil.OFFLINE_MESSAGE_ID_MAGIC;
 
+/**
+ * a server that responds to server discovery(unconnected ping) of client on networks that this machine is connected to
+ */
 @Slf4j
 public class DiscoveryServer {
 
