@@ -7,7 +7,10 @@ import lombok.SneakyThrows;
 import java.util.StringJoiner;
 
 /**
- * copied from Nukkit's Raknet Pong analyzer, with serverId promoted to UnsignedLong
+ * copied from Nukkit's Raknet Pong analyzer, with:
+ *     serverId promoted to UnsignedLong,
+ *     modification on from/to rakNet parameter
+ *
  */
 @Data
 public class BedrockPong {

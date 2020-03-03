@@ -50,6 +50,7 @@ public class ReactiveDatagramSocket {
             socket.endHandler(h->sink.complete());
             socket.exceptionHandler(sink::error);
             sink.onDispose(()->{
+                System.out.println("cleaned up!");
                 socket.handler(h->{});
                 socket.endHandler(h->{});
                 socket.exceptionHandler(ex->{});
@@ -73,6 +74,10 @@ public class ReactiveDatagramSocket {
                         }
                     });
         });
+    }
+
+    public DatagramSocket getSocket() {
+        return socket;
     }
 
 }
