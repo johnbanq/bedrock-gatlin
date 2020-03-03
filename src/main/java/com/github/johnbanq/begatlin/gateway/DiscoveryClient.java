@@ -11,6 +11,7 @@ import io.vertx.core.datagram.DatagramSocketOptions;
 import io.vertx.core.net.SocketAddress;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -39,47 +40,17 @@ public class DiscoveryClient {
         this.options = options;
     }
 
+
     public Mono<Set<DiscoveredServer>> findServersOnLocalEthernet() {
-        return withListeningSocket(socket ->
-                Mono.create(sink -> {
-                    final val receiver = socket.receiver()
-                            .filter(p -> p.data().getByte(0) == RaknetUnconnectedPong.TYPE)
-                            .map(p -> {
-                                final val pong = RaknetUnconnectedPong.fromRakNet(p.data().getBytes());
-                                return new DiscoveredServer(p.sender().host(), pong.getServerGUID(), BedrockPong.fromRakNet(pong.getIDString()));
-                            })
-                            .take(Duration.ofSeconds(30))
-                            .collect(Collectors.toSet())
-                            .subscribe(sink::success, sink::error, sink::success);
-                    sink.onDispose(receiver);
-
-                    final val packets = Mono.just(fromComponents(
-                            SocketAddress.inetSocketAddress(19132, "255.255.255.255"),
-                            Buffer.buffer(assemblePingPacket())
-                    )).repeat(10);
-
-                    final val sender = packets
-                            .flatMap(socket::send)
-                            .subscribe(v -> {}, sink::error);
-                    sink.onDispose(sender);
-                }));
+        return findServerAt(SocketAddress.inetSocketAddress(19132, "255.255.255.255"));
     }
 
-    private <T> Mono<T> withListeningSocket(Function<ReactiveDatagramSocket, Mono<T>> handler) {
-        options.setBroadcast(true);
-        final val socket = new ReactiveDatagramSocket(vertx, options);
-        return socket.start(SocketAddress.inetSocketAddress(9, "0.0.0.0"))
-                .flatMap(handler)
-                .doFinally(t->socket.stop().subscribe())
+    public Mono<Set<DiscoveredServer>> findServerAt(SocketAddress address) {
+        final val socket = new ReactiveDatagramSocket(vertx, new DatagramSocketOptions().setBroadcast(true));
+        return DiscoveryFn.periodicPing(socket, address, Duration.ofSeconds(1))
+                .take(Duration.ofSeconds(30))
+                .collect(Collectors.toSet())
                 ;
-    }
-
-    private byte[] assemblePingPacket() {
-        final val ping = new RaknetUnconnectedPing();
-        ping.setMilliSinceStart(UnsignedLong.valueOf(100));
-        ping.setClientGUID(UnsignedLong.valueOf(10));
-        ping.setOfflineMessageDataID(OFFLINE_MESSAGE_ID_MAGIC);
-        return ping.toRakNet();
     }
 
 }

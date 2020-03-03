@@ -46,9 +46,9 @@ public class ReactiveDatagramSocket {
 
     public Flux<DatagramPacket> receiver() {
         return Flux.create(sink->{
-            socket.handler(h->sink.next(h));
+            socket.handler(sink::next);
             socket.endHandler(h->sink.complete());
-            socket.exceptionHandler(h->sink.error(h));
+            socket.exceptionHandler(sink::error);
             sink.onDispose(()->{
                 socket.handler(h->{});
                 socket.endHandler(h->{});
