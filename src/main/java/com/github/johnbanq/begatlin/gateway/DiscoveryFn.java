@@ -1,11 +1,11 @@
 package com.github.johnbanq.begatlin.gateway;
 
 import com.github.johnbanq.begatlin.network.ReactiveDatagramSocket;
-import com.github.johnbanq.begatlin.protocol.BedrockPong;
 import com.github.johnbanq.begatlin.protocol.RaknetUnconnectedPing;
 import com.github.johnbanq.begatlin.protocol.RaknetUnconnectedPong;
 import com.google.common.primitives.UnsignedLong;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.datagram.DatagramPacket;
 import io.vertx.core.net.SocketAddress;
 import lombok.val;
 import reactor.core.Disposables;
@@ -19,28 +19,20 @@ import static com.github.johnbanq.begatlin.protocol.ProtocolUtil.OFFLINE_MESSAGE
 
 public class DiscoveryFn {
 
-    public static Flux<DiscoveredServer> periodicPing(ReactiveDatagramSocket socket, SocketAddress targetAddress, Duration duration) {
-        return runPing(socket, targetAddress, Flux.interval(duration));
+    public static Flux<DatagramPacket> periodicPing(ReactiveDatagramSocket socket, SocketAddress targetAddress, Duration duration) {
+        return runPing(socket, targetAddress, Flux.interval(duration).map(i->assembleMockPingPacket()));
     }
 
-    public static Function<Flux<Long>, Flux<DiscoveredServer>> ping(ReactiveDatagramSocket socket, SocketAddress targetAddress) {
-        return flux->runPing(socket, targetAddress, flux);
-    }
-
-    public static Flux<DiscoveredServer> runPing(ReactiveDatagramSocket socket, SocketAddress targetAddress, Flux<Long> requestFlux) {
+    public static Flux<DatagramPacket> runPing(ReactiveDatagramSocket socket, SocketAddress targetAddress, Flux<RaknetUnconnectedPing> requestFlux) {
         return withListeningSocket(socket, SocketAddress.inetSocketAddress(0, "0.0.0.0"), s2 ->
                 Flux.create(sink -> {
                     final val receiver = socket.receiver()
                             .filter(p -> p.data().getByte(0) == RaknetUnconnectedPong.TYPE)
-                            .map(p -> {
-                                final val pong = RaknetUnconnectedPong.fromRakNet(p.data().getBytes());
-                                return new DiscoveredServer(p.sender().host(), pong.getServerGUID(), BedrockPong.fromRakNet(pong.getIDString()));
-                            })
                             .subscribe(sink::next, sink::error, sink::complete);
 
                     final val sender = requestFlux
                             .onBackpressureLatest()
-                            .map(i->fromComponents(targetAddress, assembleMockPingPacket()))
+                            .map(p->fromComponents(targetAddress, Buffer.buffer(p.toRakNet())))
                             .flatMap(socket::send)
                             .subscribe(v -> {}, sink::error);
 
@@ -55,12 +47,12 @@ public class DiscoveryFn {
                 ;
     }
 
-    public static Buffer assembleMockPingPacket() {
+    public static RaknetUnconnectedPing assembleMockPingPacket() {
         final val ping = new RaknetUnconnectedPing();
         ping.setMilliSinceStart(UnsignedLong.valueOf(100));
         ping.setClientGUID(UnsignedLong.valueOf(10));
         ping.setOfflineMessageDataID(OFFLINE_MESSAGE_ID_MAGIC);
-        return Buffer.buffer(ping.toRakNet());
+        return ping;
     }
 
 

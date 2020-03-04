@@ -81,7 +81,7 @@ public class BedrockPong {
                 joiner.add(extra);
             }
         }
-        return joiner.toString();
+        return joiner.toString()+";";
     }
 
     private static String toString(String string) {

@@ -1,8 +1,8 @@
 package com.github.johnbanq.begatlin;
 
-import com.github.johnbanq.begatlin.gateway.DiscoveryClient;
-import com.github.johnbanq.begatlin.gateway.Inbound;
-import com.github.johnbanq.begatlin.gateway.OutboundServer;
+import com.github.johnbanq.begatlin.gateway.InboundServer;
+import com.github.johnbanq.begatlin.gateway.LocalInboundServer;
+import com.github.johnbanq.begatlin.gateway.LocalOutboundServer;
 import com.github.johnbanq.begatlin.gateway.PlayerConnection;
 import com.github.johnbanq.begatlin.protocol.RaknetUnconnectedPing;
 import com.github.johnbanq.begatlin.protocol.RaknetUnconnectedPong;
@@ -11,8 +11,9 @@ import io.vertx.core.net.SocketAddress;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Mono;
+
+import java.util.Objects;
 
 import static com.google.common.io.BaseEncoding.base16;
 
@@ -25,22 +26,13 @@ public class App {
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();
 
-        final val outboundServer = new OutboundServer(vertx, SocketAddress.inetSocketAddress(19170, "127.0.0.1"));
-        outboundServer.connect(new Inbound() {
-            @Override
-            public Mono<RaknetUnconnectedPong> handlePing(RaknetUnconnectedPing ping) {
-                System.out.println("ping packet requested");
-                return Mono.just(RaknetUnconnectedPong.fromRakNet(samplePong));
-            }
+        log.info("creating inbound server");
+        final val inboundServer = LocalInboundServer.createServer(vertx).block();
+        Objects.requireNonNull(inboundServer).getStateFlux().log("inbound/state").subscribe();
 
-            @Override
-            public Mono<Void> handleNewPlayer(PlayerConnection conn) {
-                System.out.println("new player detected!");
-                return Mono.empty();
-            }
-        });
-        outboundServer.start().log("start").block();
-        outboundServer.getStateFlux().log("state/external").subscribe();
+        log.info("creating outbound server");
+        final val outboundServer = LocalOutboundServer.createServer(inboundServer, vertx, SocketAddress.inetSocketAddress(19170, "127.0.0.1")).block();
+        Objects.requireNonNull(outboundServer).getStateFlux().log("outbound/state").subscribe();
     }
 
 }

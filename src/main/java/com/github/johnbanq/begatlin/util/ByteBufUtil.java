@@ -4,6 +4,7 @@ import com.google.common.primitives.UnsignedLong;
 import io.netty.buffer.ByteBuf;
 import lombok.val;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
 import static com.google.common.io.BaseEncoding.base16;
@@ -12,9 +13,9 @@ public class ByteBufUtil {
 
 
     public static UnsignedLong readUnsignedLong(ByteBuf buffer) {
-        byte[] array = new byte[8];
-        buffer.readBytes(array);
-        return UnsignedLong.valueOf(base16().encode(array), 16);
+        byte[] array = new byte[9];
+        buffer.readBytes(array, 1, 8);
+        return UnsignedLong.valueOf(new BigInteger(array));
     }
 
     public static void writeUnsignedLong(ByteBuf buffer, UnsignedLong value) {

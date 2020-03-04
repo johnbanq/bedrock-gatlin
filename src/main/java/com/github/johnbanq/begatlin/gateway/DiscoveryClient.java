@@ -48,6 +48,10 @@ public class DiscoveryClient {
     public Mono<Set<DiscoveredServer>> findServerAt(SocketAddress address) {
         final val socket = new ReactiveDatagramSocket(vertx, new DatagramSocketOptions().setBroadcast(true));
         return DiscoveryFn.periodicPing(socket, address, Duration.ofSeconds(1))
+                .map(p-> {
+                    final val pong = RaknetUnconnectedPong.fromRakNet(p.data().getBytes());
+                    return new DiscoveredServer(p.sender().host(), pong.getServerGUID(), BedrockPong.fromRakNet(pong.getIDString()));
+                })
                 .take(Duration.ofSeconds(30))
                 .collect(Collectors.toSet())
                 ;

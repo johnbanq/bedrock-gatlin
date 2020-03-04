@@ -11,11 +11,14 @@ import java.util.function.Function;
  */
 public class PlayerConnection {
 
+    private final String description;
+
     private final Flux<Buffer> receiveFlux;
 
     private final Function<Buffer, Mono<Void>> sender;
 
-    public PlayerConnection(Flux<Buffer> receiveFlux, Function<Buffer, Mono<Void>> senderFunction) {
+    public PlayerConnection(String description, Flux<Buffer> receiveFlux, Function<Buffer, Mono<Void>> senderFunction) {
+        this.description = description;
         this.receiveFlux = receiveFlux;
         this.sender = senderFunction;
     }
@@ -32,6 +35,13 @@ public class PlayerConnection {
      */
     public Mono<Void> send(Buffer data) {
         return sender.apply(data);
+    }
+
+    /**
+     * a description string of the connection, for logging & debug
+     */
+    public String getDescription() {
+        return description;
     }
 
 }
